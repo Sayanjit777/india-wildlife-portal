@@ -1,0 +1,424 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>India Wildlife Portal By Sayanjit Dey</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f0f8ff;
+  color: #111;
+}
+
+header {
+  background: #1b3b68;
+  color: white;
+  text-align: center;
+  padding: 1rem;
+}
+
+.container {
+  max-width: 960px;
+  margin: 1rem auto;
+  padding: 0 1rem;
+}
+
+.selector {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+.selector select,
+.selector input {
+  padding: 0.5rem;
+  margin-right: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+#map {
+  border: 2px solid #eee;
+  border-radius: 6px;
+  background: white;
+  height: 400px;
+  margin-bottom: 1.5rem;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(150px,1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.gallery img {
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+footer {
+  text-align: center;
+  color: #555;
+  padding: 1rem;
+  margin-top: 2rem;
+}
+</style>
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: #f9fefc;
+  color: #222;
+}
+header {
+  background: linear-gradient(to right, #2fc94b, #074c1f);
+  color: white;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+.selector {
+  padding: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  background: #95bc97;
+}
+.selector select, .selector input {
+  padding: 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+.selector button {
+  background: #17910c;
+  color: white;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s ease;
+}
+.selector button:hover {
+  background: #1b4332;
+}
+#map {
+  height: 400px;
+  margin: 1rem;
+  border-radius: 12px;
+  overflow: hidden;
+}
+#photoGallery {
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+#photoGallery img {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+#photoGallery img:hover {
+  transform: scale(1.05);
+}
+footer {
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+</style>
+
+<style>
+/* Dark Mode Styling */
+body.dark-mode {
+  background-color: #121212;
+  color: #e0e0e0;
+}
+body.dark-mode header {
+  background: linear-gradient(to right, #2a7d5b, #074328);
+}
+body.dark-mode .selector {
+  background-color: #302e2e;
+}
+body.dark-mode #map {
+  border: 2px solid #444;
+}
+body.dark-mode #photoGallery img {
+  box-shadow: 0 4px 10px rgba(255,255,255,0.1);
+}
+body.dark-mode footer {
+  color: #aaa;
+}
+
+/* Gallery Cards */
+.photo-card {
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
+}
+.photo-card:hover {
+  transform: scale(1.03);
+}
+.photo-card img {
+  width: 100%;
+  display: block;
+}
+.card-text {
+  padding: 0.5rem 1rem;
+}
+.iucn-badge {
+  background-color: #2a9d8f;
+  padding: 2px 8px;
+  border-radius: 5px;
+  color: white;
+  font-size: 0.8rem;
+}
+
+/* Pin Bounce Animation */
+.leaflet-marker-icon.bounce {
+  animation: bounce 0.6s infinite alternate;
+}
+@keyframes bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-10px); }
+}
+</style>
+
+</head>
+<body>
+  <button id="themeToggle" style="position: absolute; top: 1rem; right: 1rem; padding: 0.5rem 1rem; background: white; border-radius: 6px; border: none; cursor: pointer;">🌙 Dark</button>
+  <header>
+    <h1>🐾 India Wildlife Portal By Sayanjit Dey</h1>
+    <p>Sightings, Images & Conservation Status</p>
+  </header>
+  <div class="container">
+    <div class="selector">
+  <select id="iucnFilter">
+    <option value="All">All Statuses</option>
+    <option value="Least Concern">Least Concern</option>
+    <option value="Near Threatened">Near Threatened</option>
+    <option value="Endangered">Endangered</option>
+  </select>
+  
+  <select id="regionFilter">
+    <option value="All">All Regions</option>
+    <option value="Himalayas">Himalayas</option>
+    <option value="Western Ghats">Western Ghats</option>
+    <option value="Northeast">Northeast</option>
+    <option value="Central India">Central India</option>
+  </select>
+
+  <div id="statsBar" style="margin-top: 1rem; font-weight: bold;"></div>
+  
+      <select id="speciesType">
+        <option value="Bird">Bird</option>
+        <option value="Mammal">Mammal</option>
+        <option value="Fish">Fish</option>
+        <option value="Rodent">Rodent</option>
+      </select>
+      <input type="text" id="speciesQuery" placeholder="Enter species name" />
+      <button onclick="loadSpecies()">Search</button>
+    </div>
+    <div id="map"></div>
+    <div id="photoGallery" class="gallery"></div>
+  </div>
+  <footer>© 2025 | India Wildlife Portal</footer>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+<script>
+
+const speciesData = [
+  {
+    "name": "Indian Peafowl",
+    "type": "Bird",
+    "scientific": "Pavo cristatus",
+    "lat": 28.6129,
+    "lng": 77.2295,
+    "iucn": "Least Concern",
+    "last_seen": "2025-06-10",
+    "img": "https://upload.wikimedia.org/wikipedia/commons/a/a7/Pavo_cristatus_-_Maroparque_01.jpg",
+    "audio": "https://xeno-canto.org/951938/embed?simple=1"
+  },
+  {
+    "name": "Bengal Tiger",
+    "type": "Mammal",
+    "scientific": "Panthera tigris tigris",
+    "lat": 23.8122,
+    "lng": 91.2906,
+    "iucn": "Endangered",
+    "last_seen": "2025-05-23",
+    "img": "https://upload.wikimedia.org/wikipedia/commons/4/49/Panthera_tigris_tigris.jpg",
+    "audio": "https://xeno-canto.org/998394/embed?simple=1"
+  },
+  {
+    "name": "Indian Elephant",
+    "type": "Mammal",
+    "scientific": "Elephas maximus indicus",
+    "lat": 10.125,
+    "lng": 76.8619,
+    "iucn": "Endangered",
+    "last_seen": "2025-06-01",
+    "img": "https://upload.wikimedia.org/wikipedia/commons/9/98/Female_Baby_Elephant_Nagarhole_Apr22_D72_23751.jpg",
+    "audio": "https://xeno-canto.org/960777/embed?simple=1"
+  },
+  {
+    "name": "House Sparrow",
+    "type": "Bird",
+    "scientific": "Passer domesticus",
+    "lat": 22.5726,
+    "lng": 88.3639,
+    "iucn": "Least Concern",
+    "last_seen": "2025-06-25",
+    "img": "https://upload.wikimedia.org/wikipedia/commons/d/dd/Indian_Sparrow_%283%29.jpg",
+    "audio": "https://xeno-canto.org/998402/embed?simple=1"
+  },
+  {
+    "name": "Himalayan Marmot",
+    "type": "Rodent",
+    "scientific": "Marmota himalayana",
+    "lat": 34.1086,
+    "lng": 77.5619,
+    "iucn": "Least Concern",
+    "last_seen": "2025-05-15",
+    "img": "https://upload.wikimedia.org/wikipedia/commons/e/e5/Himalayan_Marmot_in_Spiti_Valley.jpg",
+    "audio": "https://xeno-canto.org/1016230/embed?simple=1"
+  },
+  {
+    "name": "Hilsa Fish",
+    "type": "Fish",
+    "scientific": "Tenualosa ilisha",
+    "lat": 22.2256,
+    "lng": 88.7618,
+    "iucn": "Near Threatened",
+    "last_seen": "2025-04-20",
+    "img": "https://upload.wikimedia.org/wikipedia/commons/7/7f/Hilsa_Fish_20160728-0003.jpg"
+  }
+];
+
+
+const map = L.map('map').setView([22.9734, 78.6569], 5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap',
+}).addTo(map);
+
+function loadSpecies() {
+  const type = document.getElementById('speciesType').value.toLowerCase();
+  const q = document.getElementById('speciesQuery').value.trim().toLowerCase();
+  map.eachLayer(layer => { if (layer instanceof L.Marker) map.removeLayer(layer); });
+  document.getElementById('photoGallery').innerHTML = '';
+
+  
+  const selectedStatus = document.getElementById('iucnFilter').value;
+
+  
+  const region = document.getElementById('regionFilter').value;
+
+  function isInRegion(item) {
+    if (region === "Himalayas") return item.lat > 30 && item.lat < 36;
+    if (region === "Western Ghats") return item.lat > 8 && item.lat < 19 && item.lng > 73 && item.lng < 78;
+    if (region === "Northeast") return item.lat > 23 && item.lng > 88;
+    if (region === "Central India") return item.lat > 20 && item.lat < 25 && item.lng > 76 && item.lng < 84;
+    return true;
+  }
+
+  const filtered = speciesData.filter(item =>
+    item.type.toLowerCase() === type &&
+    (q === "" || item.name.toLowerCase().includes(q)) &&
+    (selectedStatus === "All" || item.iucn === selectedStatus) &&
+    isInRegion(item)
+  );
+
+  if (!filtered.length) { alert("No match found"); return; }
+
+  if (filtered.length === 1) {
+    map.setView([filtered[0].lat, filtered[0].lng], 10);
+  }
+
+  document.getElementById("statsBar").innerText =
+    `Results: ${filtered.length} | Birds: ${
+      filtered.filter(s => s.type === "Bird").length
+    }, Mammals: ${
+      filtered.filter(s => s.type === "Mammal").length
+    }, Endangered: ${
+      filtered.filter(s => s.iucn === "Endangered").length
+    }`;
+
+if (!filtered.length) { alert("No match found"); return; }
+
+filtered.forEach(item => {
+    const marker = L.marker([item.lat, item.lng]).addTo(map)
+  .bindPopup(`<b>${item.name}</b><br>Scientific: ${item.scientific}<br>IUCN: ${item.iucn}<br>Last Seen: ${item.last_seen}`);
+
+bounceMarker(marker);  // 👈 This triggers the bounce effect
+  const card = document.createElement("div");
+  card.className = "photo-card";
+  
+card.innerHTML = `
+  <img src="${item.img}" alt="${item.name}" referrerpolicy="no-referrer">
+  <div class="card-text">
+    <h4>${item.name}</h4>
+    <p><span class="iucn-badge">${item.iucn}</span></p>
+    ${item.audio ? (item.audio.includes("embed")
+      ? `<iframe src="${item.audio}" scrolling="no" frameborder="0" width="100%" height="115"></iframe>`
+      : `<button onclick="new Audio('${item.audio}').play()">🔊 Play Call</button>`) : ""}
+  </div>
+`;
+
+    document.getElementById("photoGallery").appendChild(card);
+  });
+}
+</script>
+<script>
+  // Dark mode toggle
+  const toggleBtn = document.getElementById("themeToggle");
+  toggleBtn.onclick = () => {
+    document.body.classList.toggle("dark-mode");
+    toggleBtn.textContent = document.body.classList.contains("dark-mode") ? "☀️ Light" : "🌙 Dark";
+  };
+
+  // Autocomplete for search
+  const speciesNames = [
+    "Indian Peafowl", "Bengal Tiger", "Indian Elephant",
+    "House Sparrow", "Himalayan Marmot", "Hilsa Fish"
+  ];
+
+  document.getElementById("speciesQuery").addEventListener("input", function () {
+    const datalist = document.getElementById("suggestions") || document.createElement("datalist");
+    datalist.id = "suggestions";
+    this.setAttribute("list", "suggestions");
+    datalist.innerHTML = speciesNames
+      .filter(name => name.toLowerCase().includes(this.value.toLowerCase()))
+      .map(name => `<option value="${name}">`).join("");
+    if (!document.body.contains(datalist)) {
+      this.parentElement.appendChild(datalist);
+    }
+  });
+
+  // Add bounce to markers
+  function bounceMarker(marker) {
+    if (marker._icon) {
+      marker._icon.classList.add("bounce");
+      setTimeout(() => marker._icon.classList.remove("bounce"), 1400);
+    }
+  }
+</script>
+</body>
+</html>
